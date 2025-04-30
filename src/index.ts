@@ -1,7 +1,13 @@
 import { config } from 'dotenv';
-import { handleBot } from './bot';
+import { botInit, handleCallbackQuery } from './bot';
+import TelegramBot from 'node-telegram-bot-api';
 config();
+const token = process.env.TELEGRAM_BOT_TOKEN!;
 
-export const token = process.env.TELEGRAM_BOT_TOKEN!;
+const bot = new TelegramBot(token, { polling: true });
 
-handleBot()
+botInit(bot);
+
+bot.on('callback_query', async (callbackQuery) => {
+    handleCallbackQuery(bot, callbackQuery);
+});
