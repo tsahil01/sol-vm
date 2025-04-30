@@ -1,9 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
   output   = "../src/generated/prisma"
@@ -12,4 +6,60 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+}
+
+model User {
+  id            Int           @id @default(autoincrement())
+  telegramId    BigInt        @unique
+  username      String?
+  firstName     String
+  lastName      String?
+  walletAddress String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  vms           VM[]
+  transactions  Transaction[]
+}
+
+model VM {
+  id                Int           @id @default(autoincrement())
+  name              String // s,m,l
+  cpu               Int
+  ram               Int
+  disk              Int
+  price             Float
+  status            String
+  userId            Int?
+  user              User?         @relation(fields: [userId], references: [id])
+  instanceId        String? // GCP instance ID
+  ipAddress         String?
+  region            String?
+  zone              String?
+  image             String?
+  sshKey            String?
+  sshKeyName        String?
+  sshKeyFingerprint String?
+  rentedAt          DateTime?
+  expiresAt         DateTime?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  transactions      Transaction[]
+}
+
+model Transaction {
+  id            Int      @id @default(autoincrement())
+  userId        Int
+  user          User     @relation(fields: [userId], references: [id])
+  vmId          Int?
+  vm            VM?      @relation(fields: [vmId], references: [id])
+  amount        Float
+  signature     String 
+  memo          String? 
+  webhookId     String? 
+  webhookStatus String? 
+  webhookData   Json? 
+  status        String // pending, completed, failed
+  type          String // payment, refund
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 }
