@@ -1,6 +1,6 @@
 generator client {
   provider = "prisma-client-js"
-  output   = "../src/generated/prisma"
+  output   = "../generated/prisma"
 }
 
 datasource db {
@@ -53,11 +53,11 @@ model Transaction {
   vmId          Int?
   vm            VM?      @relation(fields: [vmId], references: [id])
   amount        Float
-  signature     String 
-  memo          String? 
-  webhookId     String? 
-  webhookStatus String? 
-  webhookData   Json? 
+  signature     String
+  memo          String?
+  webhookId     String?
+  webhookStatus String?
+  webhookData   Json?
   status        String // pending, completed, failed
   type          String // payment, refund
   createdAt     DateTime @default(now())
