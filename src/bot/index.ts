@@ -1,6 +1,5 @@
 import TelegramBot from "node-telegram-bot-api";
-import { helpMessage, initOptions, welcomeMessage } from "../const";
-
+import { allVMs, allVMsReplyMarkup, helpMessage, initOptions, welcomeMessage } from "../const";
 
 export async function botInit(bot: TelegramBot) {
     bot.onText(/\/start/, async (msg) => {
@@ -23,6 +22,8 @@ export async function handleCallbackQuery(bot: TelegramBot, callbackQuery: Teleg
 
     const chatId = msg.chat.id;
 
+    console.log(action)
+
     switchConditions(action!, chatId, bot);
 
     bot.answerCallbackQuery(callbackQuery.id);
@@ -43,10 +44,8 @@ export async function handleTextMessage(bot: TelegramBot, msg: TelegramBot.Messa
     }
 
     const command = text.slice(1).toLowerCase();
-
     switchConditions(command, chatId, bot);
 }
-
 
 async function switchConditions(cmd: string, chatId: number, bot: TelegramBot) {
     switch (cmd) {
@@ -55,7 +54,7 @@ async function switchConditions(cmd: string, chatId: number, bot: TelegramBot) {
             break;
 
         case 'rent':
-            await bot.sendMessage(chatId, 'Please choose a VM configuration to rent:');
+            await bot.sendMessage(chatId, 'Please choose a VM configuration to rent:', allVMsReplyMarkup);
             // TODO
             break;
 
@@ -65,12 +64,28 @@ async function switchConditions(cmd: string, chatId: number, bot: TelegramBot) {
             break;
 
         case 'available':
-            await bot.sendMessage(chatId, 'Here are the available VM configurations:');
-            // TODO
+            const message = `*Available VM Configurations:*\n\n${allVMs.map((vm) => `*${vm.name.toUpperCase()}* \n• CPU: ${vm.cpu} cores \n• RAM: ${vm.ram} GB \n• Disk: ${vm.disk} GB \n• Price: $${vm.price.toFixed(2)}/hr \n• Status: ${vm.status}`).join('\n\n')}`;
+
+            await bot.sendMessage(chatId, message, { parse_mode: 'Markdown' });
             break;
 
         case 'usage':
             await bot.sendMessage(chatId, 'Your current usage statistics:');
+            // TODO
+            break;
+
+        case 'select_vm_small':
+            await bot.sendMessage(chatId, 'You selected the small VM configuration. Please confirm your selection.');
+            // TODO
+            break;
+
+        case 'select_vm_medium':
+            await bot.sendMessage(chatId, 'You selected the medium VM configuration. Please confirm your selection.');
+            // TODO
+            break;
+
+        case 'select_vm_large':
+            await bot.sendMessage(chatId, 'You selected the large VM configuration. Please confirm your selection.');
             // TODO
             break;
     }

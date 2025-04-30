@@ -30,25 +30,40 @@ export const helpMessage = `Solana VM Bot lets you rent a GCP VM and pay with So
     `/help - Show this help message\n` +
     `\nFor more information, visit our website.`;
 
-export const allVMs: VM[] = [{
-    name: 'small',
-    cpu: 2,
-    ram: 4,
-    disk: 50,
-    price: 0.01,
-    status: 'available'
-}, {
-    name: 'medium',
-    cpu: 4,
-    ram: 8,
-    disk: 100,
-    price: 0.02,
-    status: 'available'
-}, {
-    name: 'large',
-    cpu: 8,
-    ram: 16,
-    disk: 200,
-    price: 0.03,
-    status: 'available'
-}]
+export const allVMs: VM[] = [
+    {
+        name: 'small',
+        cpu: 2,
+        ram: 4,
+        disk: 50,
+        price: 0.01,
+        status: 'available'
+    },
+    {
+        name: 'medium',
+        cpu: 4,
+        ram: 8,
+        disk: 100,
+        price: 0.02,
+        status: 'available'
+    },
+    {
+        name: 'large',
+        cpu: 8,
+        ram: 16,
+        disk: 200,
+        price: 0.03,
+        status: 'available'
+    }
+];
+
+export const allVMsReplyMarkup = {
+    reply_markup: {
+        inline_keyboard: allVMs.map(vm => [
+            {
+                text: `${vm.name.toUpperCase()} | ${vm.cpu} CPU | ${vm.ram}GB RAM | ${vm.disk}GB | ${vm.price}SOL`,
+                callback_data: `select_vm_${vm.name}`
+            }
+        ])
+    }
+};
