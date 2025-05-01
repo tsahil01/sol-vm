@@ -48,21 +48,23 @@ model VM {
 }
 
 model Transaction {
-  id            Int               @id @default(autoincrement())
-  userId        Int
-  user          User              @relation(fields: [userId], references: [id])
-  vmId          Int?
-  vm            VM?               @relation(fields: [vmId], references: [id])
-  amount        Float
-  signature     String
-  memo          String?
-  webhookId     String?
-  webhookStatus String?
-  webhookData   Json?
-  status        TransactionStatus @default(draft)
-  type          TransactionType
-  createdAt     DateTime          @default(now())
-  updatedAt     DateTime          @updatedAt
+  id              Int               @id @default(autoincrement())
+  userId          Int
+  user            User              @relation(fields: [userId], references: [id])
+  vmId            Int?
+  vm              VM?               @relation(fields: [vmId], references: [id])
+  lamports        Int?
+  paidFromAddress String?
+  signature       String?
+  memo            String?
+  webhookId       String?
+  webhookStatus   String?
+  webhookData     Json?
+  status          TransactionStatus @default(draft)
+  type            TransactionType
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  confirmedAt     DateTime?
 }
 
 enum TransactionStatus {
