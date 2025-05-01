@@ -1,11 +1,31 @@
 import TelegramBot from "node-telegram-bot-api";
 import { allVMs, allVMsReplyMarkup, helpMessage, initOptions, welcomeMessage } from "../const";
+import { db } from "..";
 
 export async function botInit(bot: TelegramBot) {
     bot.onText(/\/start/, async (msg) => {
         const chatId = msg.chat.id;
-        await bot.sendMessage(chatId, welcomeMessage, initOptions);
-        // TODO: add new user to database
+        try {
+            const telegramId = msg.from?.id;
+            const firstName = msg.from?.first_name;
+            const lastName = msg.from?.last_name;
+            const username = msg.from?.username;
+            const user = await db.user.upsert({
+                where: { telegramId: BigInt(telegramId!) },
+                update: {},
+                create: {
+                    telegramId: BigInt(telegramId!),
+                    firstName: firstName!,
+                    lastName: lastName!,
+                    username: username!,
+                },
+            })
+            console.log("User created or updated:", user);
+            await bot.sendMessage(chatId, welcomeMessage, initOptions);
+        } catch (error) {
+            console.error("Error in /start command:", error);
+            await bot.sendMessage(chatId, "An error occurred while processing your request. Please try again later.");
+        }
     });
 
     bot.onText(/\/help/, async (msg) => {
@@ -17,12 +37,10 @@ export async function botInit(bot: TelegramBot) {
 export async function handleCallbackQuery(bot: TelegramBot, callbackQuery: TelegramBot.CallbackQuery) {
     const action = callbackQuery.data;
     const msg = callbackQuery.message;
+    console.log("Callback query data:", action);
 
     if (!msg) return;
-
     const chatId = msg.chat.id;
-
-    console.log(action)
 
     switchConditions(action!, chatId, bot);
 
@@ -59,8 +77,43 @@ async function switchConditions(cmd: string, chatId: number, bot: TelegramBot) {
             break;
 
         case 'my_vms':
-            await bot.sendMessage(chatId, 'Here are your currently rented VMs:');
-            // TODO
+            try {
+                const user = await db.user.findUnique({
+                    where: { telegramId: BigInt(chatId!) },
+                    include: {
+                        vms: true,
+                    }
+                });
+                if (!user) {
+                    await bot.sendMessage(chatId, "You need to register first. Use /start to register.");
+                    break;
+                }
+                if (user.vms.length === 0) {
+                    await bot.sendMessage(chatId, "You don't have any VMs rented. Use /rent to rent a new VM.");
+                    break;
+                }
+                let message = `*Your VMs:*\n\n`;
+                user.vms.forEach((vm) => {
+                    const rentedSince = vm.rentedAt ? new Date(vm.rentedAt).toLocaleString() : 'Unknown';
+                    const expiresAt = vm.expiresAt ? new Date(vm.expiresAt).toLocaleString() : 'Not set';
+                    message += `*${vm.name ? vm.name.toUpperCase() : 'UNKNOWN'}*\n`;
+                    message += `• Type: ${vm.type}\n`;
+                    message += `• CPU: ${vm.cpu} cores\n`;
+                    message += `• RAM: ${vm.ram} GB\n`;
+                    message += `• IP: ${vm.ipAddress || 'Not assigned'}\n`;
+                    message += `• Rented since: ${rentedSince}\n`;
+                    message += `• Expires at: ${expiresAt}\n`;
+                    message += `• Hourly cost: $${vm.price.toFixed(2)}/hr\n`;
+                    message += `• Status: ${vm.status}\n\n`;
+                });
+                message += `*Total VMs rented: ${user.vms.length}*\n`;
+                message += `*Total spent: $${user.vms.reduce((sum, vm) => sum + vm.price, 0).toFixed(2)}*\n`;
+                await bot.sendMessage(chatId, message, { parse_mode: 'Markdown' });
+
+            } catch (error) {
+                console.error("Error fetching VMs:", error);
+                await bot.sendMessage(chatId, "An error occurred while fetching your VMs. Please try again later.");
+            }
             break;
 
         case 'available':
@@ -70,8 +123,57 @@ async function switchConditions(cmd: string, chatId: number, bot: TelegramBot) {
             break;
 
         case 'usage':
-            await bot.sendMessage(chatId, 'Your current usage statistics:');
-            // TODO
+            try {
+                const user = await db.user.findUnique({
+                    where: { telegramId: BigInt(chatId!) },
+                    include: {
+                        vms: true,
+                        transactions: {
+                            where: { status: 'confirmed' },
+                            orderBy: { createdAt: 'desc' }
+                        }
+                    }
+                });
+
+                if (!user) {
+                    await bot.sendMessage(chatId, "You need to register first. Use /start to register.");
+                    break;
+                }
+
+                const totalSpent = user.transactions.reduce((sum, tnx) => {
+                    return sum + (tnx.lamports ? tnx.lamports / 1e9 : 0);
+                }, 0);
+                const activeVMs = user.vms.filter(vm => vm.status === 'active');
+
+                let usageMessage = `*Your Usage Statistics*\n\n`;
+                usageMessage += `Active VMs: ${activeVMs.length}\n`;
+                usageMessage += `Total VMs (all time): ${user.vms.length}\n`;
+                usageMessage += `Total spent: ${totalSpent.toFixed(2)}SOL\n\n`;
+
+                if (activeVMs.length > 0) {
+                    usageMessage += `*Currently Active VMs:*\n`;
+                    activeVMs.forEach(vm => {
+                        const rentedSince = vm.rentedAt ? new Date(vm.rentedAt).toLocaleString() : 'Unknown';
+                        const expiresAt = vm.expiresAt ? new Date(vm.expiresAt).toLocaleString() : 'Not set';
+
+                        usageMessage += `\n*${vm.name ? vm.name.toUpperCase() : 'UNKNOWN'}*\n`;
+                        usageMessage += `• CPU: ${vm.cpu} cores\n`;
+                        usageMessage += `• RAM: ${vm.ram} GB\n`;
+                        usageMessage += `• IP: ${vm.ipAddress || 'Not assigned'}\n`;
+                        usageMessage += `• Rented since: ${rentedSince}\n`;
+                        usageMessage += `• Expires at: ${expiresAt}\n`;
+                        usageMessage += `• Hourly cost: $${vm.price.toFixed(2)}/hr\n`;
+                    });
+                } else {
+                    usageMessage += `You don't have any active VMs right now.\n`;
+                    usageMessage += `Use /rent to rent a new VM.`;
+                }
+                await bot.sendMessage(chatId, usageMessage, { parse_mode: 'Markdown' });
+
+            } catch (error) {
+                console.error("Error fetching usage statistics:", error);
+                await bot.sendMessage(chatId, "An error occurred while fetching your usage statistics. Please try again later.");
+            }
             break;
 
         case 'select_vm_small':
