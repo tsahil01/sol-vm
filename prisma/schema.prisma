@@ -23,12 +23,13 @@ model User {
 
 model VM {
   id                Int           @id @default(autoincrement())
-  name              String // s,m,l
+  name              String?
+  type              VMType
   cpu               Int
   ram               Int
   disk              Int
   price             Float
-  status            String
+  status            VMStatus      @default(pending)
   userId            Int?
   user              User?         @relation(fields: [userId], references: [id])
   instanceId        String? // GCP instance ID
@@ -47,19 +48,46 @@ model VM {
 }
 
 model Transaction {
-  id            Int      @id @default(autoincrement())
+  id            Int               @id @default(autoincrement())
   userId        Int
-  user          User     @relation(fields: [userId], references: [id])
+  user          User              @relation(fields: [userId], references: [id])
   vmId          Int?
-  vm            VM?      @relation(fields: [vmId], references: [id])
+  vm            VM?               @relation(fields: [vmId], references: [id])
   amount        Float
   signature     String
   memo          String?
   webhookId     String?
   webhookStatus String?
   webhookData   Json?
-  status        String // pending, completed, failed
-  type          String // payment, refund
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  status        TransactionStatus @default(draft)
+  type          TransactionType
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+}
+
+enum TransactionStatus {
+  draft
+  pending
+  detected
+  confirmed
+  expired
+  failed
+}
+
+enum TransactionType {
+  payment
+  refund
+}
+
+enum VMStatus {
+  pending
+  active
+  suspended
+  terminated
+}
+
+enum VMType {
+  s
+  m
+  l
 }
