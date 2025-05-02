@@ -1,7 +1,9 @@
 import TelegramBot from "node-telegram-bot-api";
 import { allVMs, allVMsReplyMarkup, helpMessage, initOptions, welcomeMessage } from "../const";
-import { db } from "..";
+import { db, receiverAddress } from "..";
 import { isValidSolanaAddress } from "../solana";
+import { createTnx } from "../tnx";
+import { LAMPORTS_PER_SOL } from "@solana/web3.js";
 
 export async function botInit(bot: TelegramBot) {
     bot.onText(/\/start/, async (msg) => {
@@ -150,7 +152,7 @@ async function switchConditions(cmd: string, chatId: number, bot: TelegramBot, m
                 }
 
                 const totalSpent = user.transactions.reduce((sum, tnx) => {
-                    return sum + (tnx.lamports ? tnx.lamports / 1e9 : 0);
+                    return sum + Number(tnx.lamports) / Number(BigInt(LAMPORTS_PER_SOL));
                 }, 0);
                 const activeVMs = user.vms.filter(vm => vm.status === 'active');
 
@@ -217,7 +219,7 @@ async function switchConditions(cmd: string, chatId: number, bot: TelegramBot, m
                         data: { walletAddress },
                     });
 
-                    if(!user) {
+                    if (!user) {
                         await bot.sendMessage(
                             chatId,
                             `*Error updating wallet address.*\nPlease try again later.`,
@@ -248,10 +250,38 @@ async function switchConditions(cmd: string, chatId: number, bot: TelegramBot, m
             }
             break;
 
-
         case 'select_vm_small':
             await bot.sendMessage(chatId, 'You selected the small VM configuration. Please confirm your selection.');
-            // TODO
+            const newTnx = await createTnx(chatId, 0.01);
+            if (newTnx === null) {
+                await bot.sendMessage(chatId, "Unable to get wallet address. Please set your wallet address using /wallet <address>.");
+                break;
+            }
+            const { transaction, user } = newTnx;
+            console.log('Transaction created:', transaction.lamports);
+
+            const solAmount = Number(transaction.lamports) / LAMPORTS_PER_SOL;
+
+            await bot.sendMessage(chatId,
+                `*✅ Transaction Created!*\n\n` +
+                `*Amount to Send:*\n\`➤ ${solAmount.toFixed(9)} SOL\`\n\n` +
+                `*Your Registered Wallet:*\n\`${user.walletAddress}\`\n\n` +
+                `*Recipient Address:*\n\`${receiverAddress}\`\n\n` +
+                `_Please send the exact amount **only** from your registered wallet._\n` +
+                `_Do not use any other wallet to avoid delays or failed verification._`,
+                { parse_mode: 'Markdown' }
+            );
+
+            await bot.sendMessage(chatId,
+                `📤 *Send* \n\`${solAmount.toFixed(9)} SOL\` \n*to:* \n\`${receiverAddress}\``,
+                { parse_mode: 'Markdown' }
+            );
+
+            await bot.sendMessage(chatId,
+                "⏳ Once the payment is confirmed on the blockchain, your virtual machine will be activated automatically.",
+                { parse_mode: 'Markdown' }
+            );
+
             break;
 
         case 'select_vm_medium':

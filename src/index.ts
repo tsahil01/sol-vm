@@ -9,6 +9,7 @@ config();
 
 const token = process.env.TELEGRAM_BOT_TOKEN!;
 const port = process.env.PORT || 3000;
+export const receiverAddress = process.env.RECEIVER_ADDRESS!;
 
 export const db = new PrismaClient();
 
