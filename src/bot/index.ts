@@ -123,12 +123,8 @@ async function selectMachineMsg(chatId: number, bot: TelegramBot, vmName: string
 ⏰ *You have 10 minutes to complete this transaction. After that, it will be canceled and you’ll need to start over.*
                     `, { parse_mode: 'Markdown' });
 
-    await bot.sendMessage(chatId,
-        `Send the amount to the address below:
-                        \`${receiverAddress}\`
-                        \n\n*Amount to send:* \`${solAmount.toFixed(9)} SOL\``,
-        { parse_mode: 'Markdown' }
-    );
+    await bot.sendMessage(chatId, `Send the amount to the address below:\n\`${receiverAddress}\`\n\n*Amount to send:* \`${solAmount.toFixed(9)} SOL\``,
+        { parse_mode: 'Markdown' });
 
     return;
 }
