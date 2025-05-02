@@ -14,7 +14,8 @@ export const initOptions = {
                 { text: '📊 Usage Stats', callback_data: 'usage' },
             ],
             [
-                { text: '❓ Help', callback_data: 'help' },
+                { text: '💰 My Wallet', callback_data: 'wallet' },
+                { text: '❓ Help', callback_data: 'help' }
             ]
         ]
     }

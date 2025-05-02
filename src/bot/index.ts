@@ -1,6 +1,7 @@
 import TelegramBot from "node-telegram-bot-api";
 import { allVMs, allVMsReplyMarkup, helpMessage, initOptions, welcomeMessage } from "../const";
 import { db } from "..";
+import { isValidSolanaAddress } from "../solana";
 
 export async function botInit(bot: TelegramBot) {
     bot.onText(/\/start/, async (msg) => {
@@ -22,6 +23,14 @@ export async function botInit(bot: TelegramBot) {
             })
             console.log("User created or updated:", user);
             await bot.sendMessage(chatId, welcomeMessage, initOptions);
+
+            const walletMsg = user.walletAddress
+                ? `\n*Your Wallet:* \n\`${user.walletAddress}\``
+                : `\n*No wallet found.*\nUse \`/wallet <address>\` to add one.`;
+
+            await bot.sendMessage(chatId, walletMsg, { parse_mode: "Markdown" });
+
+
         } catch (error) {
             console.error("Error in /start command:", error);
             await bot.sendMessage(chatId, "An error occurred while processing your request. Please try again later.");
@@ -41,7 +50,6 @@ export async function handleCallbackQuery(bot: TelegramBot, callbackQuery: Teleg
 
     if (!msg) return;
     const chatId = msg.chat.id;
-
     switchConditions(action!, chatId, bot);
 
     bot.answerCallbackQuery(callbackQuery.id);
@@ -61,11 +69,12 @@ export async function handleTextMessage(bot: TelegramBot, msg: TelegramBot.Messa
         return;
     }
 
-    const command = text.slice(1).toLowerCase();
-    switchConditions(command, chatId, bot);
+    let command = text.slice(1).toLowerCase();
+    command = command.split(' ')[0];
+    switchConditions(command, chatId, bot, text);
 }
 
-async function switchConditions(cmd: string, chatId: number, bot: TelegramBot) {
+async function switchConditions(cmd: string, chatId: number, bot: TelegramBot, msg?: string) {
     switch (cmd) {
         case 'help':
             await bot.sendMessage(chatId, helpMessage);
@@ -175,6 +184,70 @@ async function switchConditions(cmd: string, chatId: number, bot: TelegramBot) {
                 await bot.sendMessage(chatId, "An error occurred while fetching your usage statistics. Please try again later.");
             }
             break;
+
+        case 'wallet':
+            const walletAddress = msg?.split(' ')[1];
+            if (!walletAddress || walletAddress.trim() === '' || walletAddress === 'undefined') {
+                const user = await db.user.findUnique({
+                    where: { telegramId: BigInt(chatId!) },
+                    select: { walletAddress: true }
+                });
+
+                if (!user || !user.walletAddress) {
+                    await bot.sendMessage(
+                        chatId,
+                        `*No wallet address found.*\nUse \`/wallet <your_address>\` to set one.`,
+                        { parse_mode: 'Markdown' }
+                    );
+                    break;
+                }
+
+                await bot.sendMessage(
+                    chatId,
+                    `*Your wallet address:*\n\`${user.walletAddress}\`\n\n*Use /wallet <address> to update it.*`,
+                    { parse_mode: 'Markdown' }
+                );
+                break;
+            }
+
+            try {
+                if (isValidSolanaAddress(walletAddress)) {
+                    const user = await db.user.update({
+                        where: { telegramId: BigInt(chatId!) },
+                        data: { walletAddress },
+                    });
+
+                    if(!user) {
+                        await bot.sendMessage(
+                            chatId,
+                            `*Error updating wallet address.*\nPlease try again later.`,
+                            { parse_mode: 'Markdown' }
+                        );
+                        break;
+                    }
+
+                    await bot.sendMessage(
+                        chatId,
+                        `*Wallet updated successfully!*\n\`${walletAddress}\``,
+                        { parse_mode: 'Markdown' }
+                    );
+                } else {
+                    await bot.sendMessage(
+                        chatId,
+                        `*Invalid wallet address.*\nPlease provide a valid Solana address.`,
+                        { parse_mode: 'Markdown' }
+                    );
+                }
+            } catch (error) {
+                console.error("Error updating wallet address:", error);
+                await bot.sendMessage(
+                    chatId,
+                    `*Error updating wallet address.*\nPlease try again later.`,
+                    { parse_mode: 'Markdown' }
+                );
+            }
+            break;
+
 
         case 'select_vm_small':
             await bot.sendMessage(chatId, 'You selected the small VM configuration. Please confirm your selection.');

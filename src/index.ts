@@ -1,10 +1,9 @@
 import { config } from 'dotenv';
 import { botInit, handleCallbackQuery, handleTextMessage } from './bot';
 import TelegramBot from 'node-telegram-bot-api';
-import express, { Request, Response } from 'express';
+import express from 'express';
 import cors from 'cors';
 import { PrismaClient } from '../generated/prisma';
-import { isValidSolanaAddress } from './solana';
 config();
 
 const token = process.env.TELEGRAM_BOT_TOKEN!;
