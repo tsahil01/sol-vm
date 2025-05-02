@@ -4,6 +4,7 @@ import TelegramBot from 'node-telegram-bot-api';
 import express from 'express';
 import cors from 'cors';
 import { PrismaClient } from '../generated/prisma';
+import webhookRouter from './webhook';
 config();
 
 const token = process.env.TELEGRAM_BOT_TOKEN!;
@@ -30,14 +31,7 @@ app.get('/', (req, res) => {
     res.send('Hello World!');
 });
 
-app.post('/webhook', (req: any, res: any) => {
-    const { body } = req;
-    if (!body) {
-        return res.status(400).send('No body');
-    }
-    console.log('Received webhook:', body);
-    res.sendStatus(200);
-});
+app.use('/webhook', webhookRouter)
 
 app.listen(port, () => {
     console.log(`Server is running on port ${port}`);
