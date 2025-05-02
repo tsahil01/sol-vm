@@ -76,16 +76,73 @@ export async function handleTextMessage(bot: TelegramBot, msg: TelegramBot.Messa
     switchConditions(command, chatId, bot, text);
 }
 
+async function selectMachineMsg(chatId: number, bot: TelegramBot, vmName: string) {
+    const vm = allVMs.find(vm => vm.name === vmName);
+    const newTnx = await createTnx(chatId, vm!, 2);
+    if (newTnx === null) {
+        await bot.sendMessage(chatId, "Unable to get wallet address. Please set your wallet address using /wallet <address>.");
+        return;
+    }
+    const { transaction, user, vmData } = newTnx;
+
+    const solAmount = Number(transaction.lamports) / LAMPORTS_PER_SOL;
+
+    await bot.sendMessage(chatId,
+        `*🖥️ VM Configuration Details*
+                
+                ━━━━━━━━━━━━━━━━━━
+                🔹 *Type:* \`${vmData.type.toUpperCase()}\`
+                🔸 *CPU:* \`${vmData.cpu} cores\`
+                🔸 *RAM:* \`${vmData.ram} GB\`
+                🔸 *Disk:* \`${vmData.disk} GB\`
+                💰 *Hourly Price:* \`${vmData.price.toFixed(2)}SOL/hr\`
+                ⏳ *Rental Period:* \`2 hours\`
+                💵 *Total Cost:* \`${(vmData.price * 2).toFixed(2)}SOL\`
+                ━━━━━━━━━━━━━━━━━━
+                `, { parse_mode: 'Markdown' });
+
+
+    await bot.sendMessage(chatId,
+        `*✅ Transaction Created!*
+                    
+━━━━━━━━━━━━━━━━━━
+💰 *Amount to Send:*  
+\`${solAmount.toFixed(9)} SOL\`
+                    
+👛 *Your Wallet:*  
+\`${user.walletAddress}\`
+                    
+🏦 *Recipient Address:*  
+\`${receiverAddress}\`
+
+━━━━━━━━━━━━━━━━━━                    
+⚠️ _Send the exact amount from your registered wallet only. Using any other wallet may cause delays or failed verification._
+                    
+⏳ _After payment confirmation on the blockchain, your virtual machine will be activated automatically._
+                    
+⏰ *You have 10 minutes to complete this transaction. After that, it will be canceled and you’ll need to start over.*
+                    `, { parse_mode: 'Markdown' });
+
+    await bot.sendMessage(chatId,
+        `Send the amount to the address below:
+                        \`${receiverAddress}\`
+                        \n\n*Amount to send:* \`${solAmount.toFixed(9)} SOL\``,
+        { parse_mode: 'Markdown' }
+    );
+
+    return;
+}
+
 async function switchConditions(cmd: string, chatId: number, bot: TelegramBot, msg?: string) {
     switch (cmd) {
         case 'help':
             await bot.sendMessage(chatId, helpMessage);
-            break;
+            return;
 
         case 'rent':
             await bot.sendMessage(chatId, 'Please choose a VM configuration to rent:', allVMsReplyMarkup);
             // TODO
-            break;
+            return;
 
         case 'my_vms':
             try {
@@ -114,11 +171,11 @@ async function switchConditions(cmd: string, chatId: number, bot: TelegramBot, m
                     message += `• IP: ${vm.ipAddress || 'Not assigned'}\n`;
                     message += `• Rented since: ${rentedSince}\n`;
                     message += `• Expires at: ${expiresAt}\n`;
-                    message += `• Hourly cost: $${vm.price.toFixed(2)}/hr\n`;
+                    message += `• Hourly cost: ${vm.price.toFixed(2)}SOL/hr\n`;
                     message += `• Status: ${vm.status}\n\n`;
                 });
                 message += `*Total VMs rented: ${user.vms.length}*\n`;
-                message += `*Total spent: $${user.vms.reduce((sum, vm) => sum + vm.price, 0).toFixed(2)}*\n`;
+                message += `*Total spent: ${user.vms.reduce((sum, vm) => sum + vm.price, 0).toFixed(2)}SOL*\n`;
                 await bot.sendMessage(chatId, message, { parse_mode: 'Markdown' });
 
             } catch (error) {
@@ -251,47 +308,15 @@ async function switchConditions(cmd: string, chatId: number, bot: TelegramBot, m
             break;
 
         case 'select_vm_small':
-            await bot.sendMessage(chatId, 'You selected the small VM configuration. Please confirm your selection.');
-            const newTnx = await createTnx(chatId, 0.01);
-            if (newTnx === null) {
-                await bot.sendMessage(chatId, "Unable to get wallet address. Please set your wallet address using /wallet <address>.");
-                break;
-            }
-            const { transaction, user } = newTnx;
-            console.log('Transaction created:', transaction.lamports);
-
-            const solAmount = Number(transaction.lamports) / LAMPORTS_PER_SOL;
-
-            await bot.sendMessage(chatId,
-                `*✅ Transaction Created!*\n\n` +
-                `*Amount to Send:*\n\`➤ ${solAmount.toFixed(9)} SOL\`\n\n` +
-                `*Your Registered Wallet:*\n\`${user.walletAddress}\`\n\n` +
-                `*Recipient Address:*\n\`${receiverAddress}\`\n\n` +
-                `_Please send the exact amount **only** from your registered wallet._\n` +
-                `_Do not use any other wallet to avoid delays or failed verification._`,
-                { parse_mode: 'Markdown' }
-            );
-
-            await bot.sendMessage(chatId,
-                `📤 *Send* \n\`${solAmount.toFixed(9)} SOL\` \n*to:* \n\`${receiverAddress}\``,
-                { parse_mode: 'Markdown' }
-            );
-
-            await bot.sendMessage(chatId,
-                "⏳ Once the payment is confirmed on the blockchain, your virtual machine will be activated automatically.",
-                { parse_mode: 'Markdown' }
-            );
-
+            selectMachineMsg(chatId, bot, 'small');
             break;
 
         case 'select_vm_medium':
-            await bot.sendMessage(chatId, 'You selected the medium VM configuration. Please confirm your selection.');
-            // TODO
+            selectMachineMsg(chatId, bot, 'medium');
             break;
 
         case 'select_vm_large':
-            await bot.sendMessage(chatId, 'You selected the large VM configuration. Please confirm your selection.');
-            // TODO
+            selectMachineMsg(chatId, bot, 'large');
             break;
     }
 }

@@ -17,7 +17,7 @@ const app = express();
 app.use(express.json());
 app.use(cors());
 
-const bot = new TelegramBot(token, { polling: true });
+export const bot = new TelegramBot(token, { polling: true });
 botInit(bot);
 
 bot.on('callback_query', async (callbackQuery) => {

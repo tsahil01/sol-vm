@@ -1,6 +1,5 @@
 import { Router } from "express";
 import { WebhookEvent } from "../types";
-import { db } from "..";
 import { webhookProcessor } from "./processor";
 
 const router = Router();

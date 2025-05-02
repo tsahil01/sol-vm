@@ -1,4 +1,5 @@
-import { db, receiverAddress } from "..";
+import { LAMPORTS_PER_SOL } from "@solana/web3.js";
+import { bot, db, receiverAddress } from "..";
 import { WebhookEvent } from "../types";
 
 export async function webhookProcessor(data: WebhookEvent) {
@@ -61,14 +62,6 @@ export async function webhookProcessor(data: WebhookEvent) {
                 console.log('No amount transferred');
             }
 
-            console.log(`Webhook ID: ${webhookId}`);
-            console.log(`Created At: ${createdAt}`);
-            console.log(`Signature: ${signature}`);
-            console.log(`Sender: ${sender}`);
-            console.log(`Receiver: ${receiver}`);
-            console.log(`Amount Transferred: ${amtTransfer}`);
-            console.log(`Fee: ${fee}`);
-
             if (receiver !== receiverAddress) {
                 console.log('Receiver is not the expected address');
                 return;
@@ -109,6 +102,31 @@ export async function webhookProcessor(data: WebhookEvent) {
                 return;
             }
 
+            if (transaction.lamports > amtTransfer) {
+                console.log('Transaction amount is less than expected');
+                const expectedSol = Number(transaction.lamports) / LAMPORTS_PER_SOL;
+                const receivedSol = amtTransfer / LAMPORTS_PER_SOL;
+                await bot.sendMessage(user.telegramId.toString(), `Transaction amount is less than expected.\nExpected: ${expectedSol.toFixed(9)} SOL,\nReceived: ${receivedSol.toFixed(9)} SOL\nTransaction ID: ${transaction.id}\nSignature: ${signature}\n\nTransaction marked for refund.\nPlease contact support.`);
+                await db.transaction.update({
+                    where: {
+                        id: transaction.id
+                    },
+                    data: {
+                        type: 'refund',
+                        status: 'detected',
+                        signature: signature,
+                        paidFromAddress: sender,
+                        lamports: transaction.lamports,
+                        webhookId: webhookId,
+                        webhookStatus: 'received',
+                        webhookData: JSON.stringify(data),
+                        updatedAt: new Date(),
+                        confirmedAt: new Date()
+                    }
+                });
+                return;
+            }
+
             const updateTnx = await db.transaction.update({
                 where: {
                     id: transaction.id
@@ -125,6 +143,10 @@ export async function webhookProcessor(data: WebhookEvent) {
                     confirmedAt: new Date()
                 }
             });
+
+            await bot.sendMessage(user.telegramId.toString(), `Transaction detected: \nTransaction ID: ${updateTnx.id}\nSignature: ${signature}\nAmount: ${amtTransfer / LAMPORTS_PER_SOL} SOL\nWebhook ID: ${webhookId}\n\nPlease wait for confirmation.`);
+            await bot.sendMessage(user.telegramId.toString(), `Starting VM creation process...`);
+            // TODO: Call the function to create the VM here
 
             console.log(`Transaction ${updateTnx.id} updated successfully`);
         }
