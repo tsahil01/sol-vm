@@ -53,10 +53,9 @@ model Transaction {
   user            User              @relation(fields: [userId], references: [id])
   vmId            Int?
   vm              VM?               @relation(fields: [vmId], references: [id])
-  lamports        Int?
+  lamports        BigInt
   paidFromAddress String?
   signature       String?
-  memo            String?
   webhookId       String?
   webhookStatus   String?
   webhookData     Json?
