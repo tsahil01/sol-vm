@@ -1,6 +1,9 @@
 import { LAMPORTS_PER_SOL } from "@solana/web3.js";
 import { bot, db, receiverAddress } from "..";
 import { WebhookEvent } from "../types";
+import { createUserVM } from "../vm";
+import * as fs from 'fs';
+import { vmStartInstructions } from "../const";
 
 export async function webhookProcessor(data: WebhookEvent) {
     try {
@@ -145,8 +148,52 @@ export async function webhookProcessor(data: WebhookEvent) {
             });
 
             await bot.sendMessage(user.telegramId.toString(), `Transaction detected: \nTransaction ID: ${updateTnx.id}\nSignature: ${signature}\nAmount: ${amtTransfer / LAMPORTS_PER_SOL} SOL\nWebhook ID: ${webhookId}\n\nPlease wait for confirmation.`);
-            await bot.sendMessage(user.telegramId.toString(), `Starting VM creation process...`);
-            // TODO: Call the function to create the VM here
+
+            await bot.sendMessage(user.telegramId.toString(), 'Creating your VM... This may take a minute.');
+
+            const vmDetails = await createUserVM(`${user.telegramId.toString()}-${Date.now()}`);
+
+            db.transaction.update({
+                where: {
+                    id: updateTnx.id
+                },
+                data: {
+                    status: 'confirmed',
+                    webhookStatus: 'confirmed',
+                    vm: {
+                        update: {
+                            instanceId: vmDetails.instanceName,
+                            ipAddress: vmDetails.ip,
+                            status: 'active',
+                            zone: vmDetails.zone,
+                            sshKey: vmDetails.privateKey,
+                            rentedAt: new Date(),
+                            expiresAt: new Date(Date.now() + 60 * 60 * 1000 * 2), // 2 hours
+                        }
+                    }
+                }
+            })
+
+
+            await bot.sendDocument(user.telegramId.toString(),
+                fs.readFileSync(vmDetails.keyFilePath),
+                {
+                    caption: `Save this private key file securely. Never share it with anyone. Filename: private_key_${userId}.pem`,
+                }, {
+                    filename: `private_key_${userId}.pem`,
+                    contentType: 'application/x-pem-file',
+                }
+            );
+
+
+            fs.unlinkSync(vmDetails.keyFilePath);
+
+
+
+
+            await bot.sendMessage(user.telegramId.toString(), vmStartInstructions(vmDetails, user.telegramId.toString()), {
+                parse_mode: 'Markdown',
+            });
 
             console.log(`Transaction ${updateTnx.id} updated successfully`);
         }

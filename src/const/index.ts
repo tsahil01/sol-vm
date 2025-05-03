@@ -68,3 +68,28 @@ export const allVMsReplyMarkup = {
         ])
     }
 };
+
+export function vmStartInstructions(vmDetails: { ip: string; instanceName: string }, userId: string) {
+    return `
+    🖥️ *Your VM is ready!*
+    
+    *IP Address:* \`${vmDetails.ip}\`
+    *Username:* \`user\`
+    
+    *SSH Connection Instructions:*
+    
+    *For Linux/Mac:*
+    1. Save the private key file
+    2. Run: \`chmod 600 private_key_${userId}.pem\`
+    3. Connect: \`ssh -i private_key_${userId}.pem user@${vmDetails.ip}\`
+    
+    *For Windows:*
+    1. Use PuTTY Key Generator to convert the key
+    2. In PuTTY, set host to: \`${vmDetails.ip}\`
+    3. Go to Connection > SSH > Auth > Credentials
+    4. Browse to your converted private key
+    5. Click "Open" and use username: \`user\`
+    
+    *Your VM Instance Name:* \`${vmDetails.instanceName}\`
+    `;
+}
