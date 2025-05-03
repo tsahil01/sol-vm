@@ -90,6 +90,6 @@ export function vmStartInstructions(vmDetails: { ip: string; instanceName: strin
     4. Browse to your converted private key
     5. Click "Open" and use username: \`user\`
     
-    *Your VM Instance Name:* \`${vmDetails.instanceName}\`
+    *Your VM Instance Name:*\n\`${vmDetails.instanceName}\`
     `;
 }

@@ -147,9 +147,19 @@ export async function webhookProcessor(data: WebhookEvent) {
                 }
             });
 
-            await bot.sendMessage(user.telegramId.toString(), `Transaction detected: \nTransaction ID: ${updateTnx.id}\nSignature: ${signature}\nAmount: ${amtTransfer / LAMPORTS_PER_SOL} SOL\nWebhook ID: ${webhookId}\n\nPlease wait for confirmation.`);
+            await bot.sendMessage(user.telegramId.toString(),
+                (`🔔 *Transaction Detected!*\n\n` +
+                `*Transaction ID:* \`${updateTnx.id}\`\n` +
+                `*Signature:* \`${signature}\`\n` +
+                `*Amount:* ${amtTransfer / LAMPORTS_PER_SOL} SOL\n` +
+                `*Webhook ID:* \`${webhookId}\`\n\n` +
+                `⏳ *Please wait while we confirm the transaction...*`)
+            );
 
-            await bot.sendMessage(user.telegramId.toString(), 'Creating your VM... This may take a minute.');
+            await bot.sendMessage(user.telegramId.toString(),
+                `🛠️ *Creating your VM...*\nThis may take up to a minute. Thank you for your patience!`
+            );
+
 
             const vmDetails = await createUserVM(`${user.telegramId.toString()}-${Date.now()}`);
 
@@ -178,18 +188,14 @@ export async function webhookProcessor(data: WebhookEvent) {
             await bot.sendDocument(user.telegramId.toString(),
                 fs.readFileSync(vmDetails.keyFilePath),
                 {
-                    caption: `Save this private key file securely. Never share it with anyone. Filename: private_key_${userId}.pem`,
+                    caption: `Save this private key file securely. Never share it with anyone. Filename: private_key_${user.telegramId.toString()}.pem`,
                 }, {
-                    filename: `private_key_${userId}.pem`,
-                    contentType: 'application/x-pem-file',
-                }
+                filename: `private_key_${user.telegramId.toString()}.pem`,
+                contentType: 'application/x-pem-file',
+            }
             );
 
-
             fs.unlinkSync(vmDetails.keyFilePath);
-
-
-
 
             await bot.sendMessage(user.telegramId.toString(), vmStartInstructions(vmDetails, user.telegramId.toString()), {
                 parse_mode: 'Markdown',
