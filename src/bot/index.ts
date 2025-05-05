@@ -137,7 +137,6 @@ async function switchConditions(cmd: string, chatId: number, bot: TelegramBot, m
 
         case 'rent':
             await bot.sendMessage(chatId, 'Please choose a VM configuration to rent:', allVMsReplyMarkup);
-            // TODO
             return;
 
         case 'my_vms':

@@ -93,3 +93,7 @@ export function vmStartInstructions(vmDetails: { ip: string; instanceName: strin
     *Your VM Instance Name:*\n\`${vmDetails.instanceName}\`
     `;
 }
+
+export function solDerivePath(account: number): string {
+    return `m/44'/501'/${account}'/0'`;
+}
