@@ -64,6 +64,15 @@ model Transaction {
   confirmedAt     DateTime?
 }
 
+model SolanaKeys {
+  id                Int      @id @default(autoincrement())
+  path              String
+  publicKey         String
+  encryptPrivateKey String
+  encryptSeedPhrase String
+  createdAt         DateTime @default(now())
+}
+
 enum TransactionStatus {
   draft
   pending
