@@ -5,6 +5,7 @@ import express from 'express';
 import cors from 'cors';
 import { PrismaClient } from '../generated/prisma';
 import webhookRouter from './webhook';
+import { createClient } from "redis";
 config();
 
 const token = process.env.TELEGRAM_BOT_TOKEN!;
@@ -27,6 +28,16 @@ bot.on('callback_query', async (callbackQuery) => {
 bot.on('message', async (msg) => {
     handleTextMessage(bot, msg);
 })
+
+export const client = createClient({
+    url: `redis://${process.env.REDIS_HOST || 'localhost'}:${process.env.REDIS_PORT || 6379}`
+});
+client.on('error', (err) => console.log('Redis Client Error', err));
+
+(async () => {
+    await client.connect();
+    console.log('Connected to Redis');
+})();
 
 app.get('/', (req, res) => {
     res.send('Hello World!');

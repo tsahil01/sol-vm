@@ -7,7 +7,8 @@ import bs58 from "bs58";
 
 const connection = new Connection(clusterApiUrl("devnet"), "confirmed");
 
-export async function generateNewAccount(seed: string, account: number) {
+export async function generateNewAccount(account: number) {
+    const seed = process.env.SOLANA_SEED!;
     const seedBuffer = mnemonicToSeedSync(seed);
     const solanaPath = solDerivePath(account - 1);
     const solanaDerivedSeed = derivePath(
