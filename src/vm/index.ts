@@ -63,6 +63,8 @@ export async function createUserVM(userId: string) {
         },
     });
 
+    console.log(`Response from VM creation:`, response);
+
     await new Promise(resolve => setTimeout(resolve, 15000));
 
     const [vmDetails] = await instancesClient.get({
@@ -70,6 +72,7 @@ export async function createUserVM(userId: string) {
         zone,
         instance: instanceName,
     });
+    console.log('VM Details:', vmDetails);
 
     const networkInterfaces = vmDetails.networkInterfaces;
     const externalIP = networkInterfaces?.[0]?.accessConfigs?.[0]?.natIP;
