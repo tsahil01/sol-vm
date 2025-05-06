@@ -66,7 +66,6 @@ export async function checkLatestPayment(minutesAgo: number, walletAddress: Publ
         commitment: "confirmed"
     });
 
-    console.log(`Transaction: ${tx}`);
 
     if (!tx || !tx.meta || !tx.blockTime) {
         return null;
@@ -83,10 +82,6 @@ export async function checkLatestPayment(minutesAgo: number, walletAddress: Publ
     const post = tx.meta.postBalances[0];
     const fees = tx.meta.fee;
     const diff = pre - post - fees;
-    console.log(`Pre-balance: ${pre}`);
-    console.log(`Post-balance: ${post}`);
-    console.log(`Difference: ${diff}`);
-
 
     if (diff > 0) {
         return {

@@ -1,7 +1,7 @@
 import { db, redisClient } from "..";
 import { generateNewAccount } from "../solana";
 import { encryptKey } from "../solana/encrypt-decrypt";
-import { Payment, SolRedisData } from "../types";
+import { Payment, SolRedisData, VMRedisData } from "../types";
 
 export async function setSolanaKeys({ id, publicKey, encryptedKey, derivationPath, inUse }: SolRedisData) {
     const key = `solana:keys:${id}`;
@@ -150,4 +150,40 @@ export async function removePayment(id: string) {
     const key = `payment:${id}`;
     await redisClient.del(key);
     await redisClient.sRem("payments", key);
+}
+
+export async function addVm(vm: VMRedisData) {
+    const key = `vm:${vm.id}`;
+    await redisClient.hSet(key, {
+        instanceId: vm.instanceId,
+        startTime: vm.startTime.toISOString(),
+        endTime: vm.endTime.toISOString(),
+        chatId: vm.chatId,
+    });
+    await redisClient.sAdd("vms", key);
+}
+
+export async function allRedisVms() {
+    const keys = await redisClient.sMembers("vms");
+    const vms: VMRedisData[] = [];
+
+    for (const key of keys) {
+        const data = await redisClient.hGetAll(key);
+        if (data) {
+            vms.push({
+                id: key.split(":")[1],
+                instanceId: String(data.instanceId),
+                startTime: new Date(String(data.startTime)),
+                endTime: new Date(String(data.endTime)),
+                chatId: String(data.chatId),
+            });
+        }
+    }
+    return vms;
+}
+
+export async function rmVm(id: string){
+    const key = `vm:${id}`;
+    await redisClient.del(key);
+    await redisClient.sRem("vms", key);
 }

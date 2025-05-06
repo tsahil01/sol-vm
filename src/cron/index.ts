@@ -1,8 +1,9 @@
 import { LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js";
 import { bot, db } from "..";
-import { allPendingPayments, makeSolanaKeyUnused, removePayment } from "../redis";
+import { allPendingPayments, allRedisVms, makeSolanaKeyUnused, removePayment, rmVm } from "../redis";
 import { checkLatestPayment } from "../solana";
 import { afterPayment } from "../vm/processor";
+import { deleteUserVM } from "../vm";
 
 export async function checkPayments() {
     const payments = await allPendingPayments();
@@ -16,7 +17,9 @@ export async function checkPayments() {
             console.log(`Payment ${payment.id} has expired.`);
             await removePayment(payment.id);
             await makeSolanaKeyUnused(payment.paidToAddress);
-            bot.sendMessage(payment.chatId, `*Your payment for ${payment.amount / BigInt(LAMPORTS_PER_SOL)}SOL has expired.*\nPlease make a new payment.`);
+            bot.sendMessage(payment.chatId, `*Your payment for ${payment.amount}SOL has expired.*\nPlease make a new payment.`, {
+                parse_mode: 'Markdown',
+            });
             await db.transaction.update({
                 where: {
                     id: Number(payment.id),
@@ -36,7 +39,9 @@ export async function checkPayments() {
             if (data && data.signature && data.amount > 0) {
                 await removePayment(payment.id);
                 await makeSolanaKeyUnused(payment.paidToAddress);
-                bot.sendMessage(payment.chatId, `✅ *Your payment of ${data.amount} has been received!*`);
+                bot.sendMessage(payment.chatId, `✅ *Your payment of ${data.amount} has been received!*`, {
+                    parse_mode: 'Markdown',
+                });
                 try {
                     const transaction = await db.transaction.findUnique({
                         where: {
@@ -64,18 +69,26 @@ export async function checkPayments() {
                             },
                         });
 
-                        bot.sendMessage(payment.chatId, `🎉 *Your payment of ${data.amount / LAMPORTS_PER_SOL}SOL has been confirmed!*\n\n*Signature:* \`${data.signature}\`\n*Paid from:* \`${data.paidFromAddress}\``);
-                        bot.sendMessage(payment.chatId, `🚀 *Starting your Virtual Machine...*`);
+                        bot.sendMessage(payment.chatId, `🎉 *Your payment of ${data.amount / LAMPORTS_PER_SOL}SOL has been confirmed!*\n\n*Signature:* \`${data.signature}\`\n*Paid from:* \`${data.paidFromAddress}\``, {
+                            parse_mode: 'Markdown',
+                        });
+                        bot.sendMessage(payment.chatId, `🚀 *Starting your Virtual Machine...*`, {
+                            parse_mode: 'Markdown',
+                        });
 
                         const vm = await afterPayment({ chatId: payment.chatId, tnxId: Number(payment.id) });
                         if (vm != true) {
-                            bot.sendMessage(payment.chatId, `⚠️ *Your payment has been confirmed, but there was an error processing the transaction.*`);
+                            bot.sendMessage(payment.chatId, `⚠️ *Your payment has been confirmed, but there was an error processing the transaction.*`, {
+                                parse_mode: 'Markdown',
+                            });
                         }
 
 
                     } else {
                         console.log(`Transaction not found or amount mismatch for payment ${payment.id}.`);
-                        bot.sendMessage(payment.chatId, `❌ *The payment of ${data.amount / LAMPORTS_PER_SOL}SOL is not enough to start your Virtual Machine.*\nPlease make a new payment.`);
+                        bot.sendMessage(payment.chatId, `❌ *The payment of ${data.amount / LAMPORTS_PER_SOL}SOL is not enough to start your Virtual Machine.*\nPlease make a new payment.`, {
+                            parse_mode: 'Markdown',
+                        });
                         await db.transaction.update({
                             where: {
                                 id: Number(payment.id),
@@ -92,6 +105,47 @@ export async function checkPayments() {
                     console.error(`Failed to update transaction status for payment ${payment.id}:`, err);
                 }
             }
+        }
+    }
+}
+
+export async function stopVms() {
+    const vms = await allRedisVms();
+    console.log(`Found ${vms.length} VMs.`);
+    if (vms.length === 0) return;
+    const now = new Date();
+    for (const vm of vms) {
+        try {
+            if (vm.endTime < now) {
+                console.log(`VM ${vm.id} has expired.`);
+                bot.sendMessage(vm.chatId, `*Your VM has expired..*\nClosing the VM now...`, {
+                    parse_mode: 'Markdown',
+                });
+                const delVm = await deleteUserVM(vm.instanceId);
+                if (delVm != true) {
+                    bot.sendMessage(vm.chatId, `*There was an error terminating your VM.*`, {
+                        parse_mode: 'Markdown',
+                    });
+                }
+                await db.vM.update({
+                    where: {
+                        id: Number(vm.id),
+                    },
+                    data: {
+                        status: 'terminated',
+                        updatedAt: new Date(),
+                    }
+                });
+                bot.sendMessage(vm.chatId, `*Your Virtual Machine with instance ID ${vm.instanceId} has been deleted.*\nThankyou for using SolVM!!`, {
+                    parse_mode: 'Markdown',
+                });
+                await rmVm(vm.id);
+            }
+        } catch (err) {
+            console.error(`Failed to delete VM ${vm.id}:`, err);
+            bot.sendMessage(vm.chatId, `*There was an error terminating your VM.*`, {
+                parse_mode: 'Markdown',
+            });
         }
     }
 }

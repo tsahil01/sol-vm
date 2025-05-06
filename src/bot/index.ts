@@ -72,7 +72,7 @@ async function selectMachineMsg(chatId: number, bot: TelegramBot, vmName: string
     const vm = allVMs.find(vm => vm.name === vmName);
     const newTnx = await createTnx(chatId, vm!, 2);
     if (newTnx === null) {
-        await bot.sendMessage(chatId, "Unable to get wallet address. Please set your wallet address using /wallet <address>.");
+        await bot.sendMessage(chatId, "Kindly use /start and start over.");
         return;
     }
     const { transaction, vmData } = newTnx;

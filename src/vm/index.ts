@@ -92,3 +92,21 @@ export async function createUserVM(userId: string) {
         zone,
     };
 }
+
+export async function deleteUserVM(instanceName: string) {
+    try {
+        const instancesClient = new InstancesClient();
+        const del = await instancesClient.delete({
+            project: projectId,
+            zone,
+            instance: instanceName,
+        });
+
+        if (del[0]) {
+            console.log(`Instance ${instanceName} deleted successfully.`);
+            return true;
+        }
+    } catch (error) {
+        console.error(`Error deleting instance ${instanceName}:`, error);
+    }
+}

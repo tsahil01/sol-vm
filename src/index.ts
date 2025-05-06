@@ -7,7 +7,7 @@ import { PrismaClient } from '../generated/prisma';
 import { createClient } from "redis";
 import { setSolanaKeys } from './redis';
 import cron from 'node-cron';
-import { checkPayments } from './cron';
+import { checkPayments, stopVms } from './cron';
 config();
 
 const token = process.env.TELEGRAM_BOT_TOKEN!;
@@ -58,6 +58,11 @@ app.get('/', (req, res) => {
 cron.schedule('*/30 * * * * *', () => {
     console.log('Running cron job every 30 seconds');
     checkPayments();
+});
+
+cron.schedule('*/15 * * * *', () => {
+    console.log('Running cron job every 15 minutes');
+    stopVms();
 });
 
 
