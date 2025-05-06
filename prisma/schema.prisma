@@ -52,11 +52,9 @@ model Transaction {
   vm              VM?               @relation(fields: [vmId], references: [id])
   lamports        BigInt
   paidFromAddress String?
+  vmStatus        String            @default("pending")
   paidToAddress   String?
   signature       String?
-  webhookId       String?
-  webhookStatus   String?
-  webhookData     Json?
   status          TransactionStatus @default(draft)
   type            TransactionType
   createdAt       DateTime          @default(now())
