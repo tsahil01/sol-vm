@@ -1,7 +1,6 @@
 import TelegramBot from "node-telegram-bot-api";
 import { allVMs, allVMsReplyMarkup, helpMessage, initOptions, welcomeMessage } from "../const";
-import { db, receiverAddress } from "..";
-import { isValidSolanaAddress } from "../solana";
+import { db } from "..";
 import { createTnx } from "../tnx";
 import { LAMPORTS_PER_SOL } from "@solana/web3.js";
 
@@ -25,13 +24,6 @@ export async function botInit(bot: TelegramBot) {
             })
             console.log("User created or updated:", user);
             await bot.sendMessage(chatId, welcomeMessage, initOptions);
-
-            const walletMsg = user.walletAddress
-                ? `\n*Your Wallet:* \n\`${user.walletAddress}\``
-                : `\n*No wallet found.*\nUse \`/wallet <address>\` to add one.`;
-
-            await bot.sendMessage(chatId, walletMsg, { parse_mode: "Markdown" });
-
 
         } catch (error) {
             console.error("Error in /start command:", error);
@@ -83,7 +75,7 @@ async function selectMachineMsg(chatId: number, bot: TelegramBot, vmName: string
         await bot.sendMessage(chatId, "Unable to get wallet address. Please set your wallet address using /wallet <address>.");
         return;
     }
-    const { transaction, user, vmData } = newTnx;
+    const { transaction, vmData } = newTnx;
 
     const solAmount = Number(transaction.lamports) / LAMPORTS_PER_SOL;
 
@@ -109,21 +101,18 @@ async function selectMachineMsg(chatId: number, bot: TelegramBot, vmName: string
 💰 *Amount to Send:*  
 \`${solAmount.toFixed(9)} SOL\`
                     
-👛 *Your Wallet:*  
-\`${user.walletAddress}\`
-                    
 🏦 *Recipient Address:*  
-\`${receiverAddress}\`
+\`${transaction.paidToAddress}\`
 
 ━━━━━━━━━━━━━━━━━━                    
-⚠️ _Send the exact amount from your registered wallet only. Using any other wallet may cause delays or failed verification._
+⚠️ _Send the exact amount only._
                     
 ⏳ _After payment confirmation on the blockchain, your virtual machine will be activated automatically._
                     
 ⏰ *You have 10 minutes to complete this transaction. After that, it will be canceled and you’ll need to start over.*
                     `, { parse_mode: 'Markdown' });
 
-    await bot.sendMessage(chatId, `Send the amount to the address below:\n\`${receiverAddress}\`\n\n*Amount to send:* \`${solAmount.toFixed(9)} SOL\``,
+    await bot.sendMessage(chatId, `Send the amount to the address below:\n\`${transaction.paidToAddress}\`\n\n*Amount to send:* \`${solAmount.toFixed(9)} SOL\``,
         { parse_mode: 'Markdown' });
 
     return;
@@ -236,69 +225,6 @@ async function switchConditions(cmd: string, chatId: number, bot: TelegramBot, m
             } catch (error) {
                 console.error("Error fetching usage statistics:", error);
                 await bot.sendMessage(chatId, "An error occurred while fetching your usage statistics. Please try again later.");
-            }
-            break;
-
-        case 'wallet':
-            const walletAddress = msg?.split(' ')[1];
-            if (!walletAddress || walletAddress.trim() === '' || walletAddress === 'undefined') {
-                const user = await db.user.findUnique({
-                    where: { telegramId: BigInt(chatId!) },
-                    select: { walletAddress: true }
-                });
-
-                if (!user || !user.walletAddress) {
-                    await bot.sendMessage(
-                        chatId,
-                        `*No wallet address found.*\nUse \`/wallet <your_address>\` to set one.`,
-                        { parse_mode: 'Markdown' }
-                    );
-                    break;
-                }
-
-                await bot.sendMessage(
-                    chatId,
-                    `*Your wallet address:*\n\`${user.walletAddress}\`\n\n*Use /wallet <address> to update it.*`,
-                    { parse_mode: 'Markdown' }
-                );
-                break;
-            }
-
-            try {
-                if (isValidSolanaAddress(walletAddress)) {
-                    const user = await db.user.update({
-                        where: { telegramId: BigInt(chatId!) },
-                        data: { walletAddress },
-                    });
-
-                    if (!user) {
-                        await bot.sendMessage(
-                            chatId,
-                            `*Error updating wallet address.*\nPlease try again later.`,
-                            { parse_mode: 'Markdown' }
-                        );
-                        break;
-                    }
-
-                    await bot.sendMessage(
-                        chatId,
-                        `*Wallet updated successfully!*\n\`${walletAddress}\``,
-                        { parse_mode: 'Markdown' }
-                    );
-                } else {
-                    await bot.sendMessage(
-                        chatId,
-                        `*Invalid wallet address.*\nPlease provide a valid Solana address.`,
-                        { parse_mode: 'Markdown' }
-                    );
-                }
-            } catch (error) {
-                console.error("Error updating wallet address:", error);
-                await bot.sendMessage(
-                    chatId,
-                    `*Error updating wallet address.*\nPlease try again later.`,
-                    { parse_mode: 'Markdown' }
-                );
             }
             break;
 

@@ -2,6 +2,7 @@ import { LAMPORTS_PER_SOL } from "@solana/web3.js";
 import { db } from "..";
 import { VM } from "../types";
 import { VMType } from "../../generated/prisma";
+import { getUnusedSolanaKey } from "../redis";
 
 export async function createTnx(chatId: number, vm: VM, hr: number) {
     const user = await db.user.findUnique({
@@ -9,7 +10,7 @@ export async function createTnx(chatId: number, vm: VM, hr: number) {
             telegramId: BigInt(chatId),
         },
     });
-    if (!user || !user.walletAddress) {
+    if (!user) {
         console.log('User not found. Cannot create transaction.');
         return null;
     }
@@ -32,13 +33,15 @@ export async function createTnx(chatId: number, vm: VM, hr: number) {
         return null;
     }
 
+    const payTo = await getUnusedSolanaKey();
+
     const transaction = await db.transaction.create({
         data: {
             userId: user.id,
             lamports: vmData.price * LAMPORTS_PER_SOL * hr,
+            paidToAddress: payTo.publicKey,
             status: 'pending',
             type: 'payment',
-            paidFromAddress: user.walletAddress,
             webhookStatus: 'pending',
             vmId: vmData.id,
         },
