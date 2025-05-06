@@ -69,7 +69,6 @@ model SolanaKeys {
   path              String
   publicKey         String
   encryptPrivateKey String
-  encryptSeedPhrase String
   createdAt         DateTime @default(now())
 }
 

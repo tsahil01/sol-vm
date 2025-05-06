@@ -29,13 +29,13 @@ bot.on('message', async (msg) => {
     handleTextMessage(bot, msg);
 })
 
-export const client = createClient({
+export const redisClient = createClient({
     url: `redis://${process.env.REDIS_HOST || 'localhost'}:${process.env.REDIS_PORT || 6379}`
 });
-client.on('error', (err) => console.log('Redis Client Error', err));
+redisClient.on('error', (err) => console.log('Redis Client Error', err));
 
 (async () => {
-    await client.connect();
+    await redisClient.connect();
     console.log('Connected to Redis');
 })();
 

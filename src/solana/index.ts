@@ -26,10 +26,8 @@ export async function generateNewAccount(account: number) {
             solana: solanaPath,
         },
         keysValue: {
-            solana: {
-                publicKey: solanaPublicKey,
-                secretKey: solanaSecretKey,
-            },
+            publicKey: solanaPublicKey,
+            secretKey: solanaSecretKey,
         },
     };
 }

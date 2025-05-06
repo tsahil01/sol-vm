@@ -30,3 +30,10 @@ export interface WebhookEvent {
         }[];
     };
 }
+
+export interface SolRedisData {
+    id: string;
+    publicKey: string;
+    encryptedKey: string;
+    inUse: boolean;
+}
