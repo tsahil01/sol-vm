@@ -42,6 +42,8 @@ export async function setSolanaKeys({ id, publicKey, encryptedKey, derivationPat
 export async function getUnusedSolanaKey() {
     const indexKey = "solana:keys:inUse:false";
     const keys = await redisClient.sMembers(indexKey);
+    console.log(`Found ${keys.length} unused solana keys`);
+    console.log(keys);
 
     if (keys.length > 0) {
         const key = keys[0];
@@ -56,7 +58,7 @@ export async function getUnusedSolanaKey() {
         };
 
         await redisClient.sRem(indexKey, key);
-        await redisClient.hSet(key, "inUse", "true");
+        await redisClient.sAdd("solana:keys:inUse:true", key);
         return result;
 
     } else {
@@ -77,14 +79,37 @@ export async function getUnusedSolanaKey() {
     }
 }
 
-export async function makeSolanaKeyUnused(id: string) {
-    const key = `solana:keys:${id}`;
-    const data = await redisClient.hGetAll(key);
+export async function makeSolanaKeyUnused(publicKey: string) {
+    console.log(`Looking for key with publicKey: ${publicKey}`);
 
-    if (data) {
-        await redisClient.sAdd("solana:keys:inUse:false", key);
-        await redisClient.hSet(key, "inUse", "false");
+    const inUseKeys = await redisClient.sMembers("solana:keys:inUse:true");
+    console.log(`Found ${inUseKeys.length} keys in use`);
+
+    let matchedKey = null;
+
+    for (const key of inUseKeys) {
+        const data = await redisClient.hGetAll(key);
+
+        if (data && data.publicKey === publicKey) {
+            matchedKey = key;
+            console.log(`Found matching key: ${key}`);
+            break;
+        }
     }
+
+    if (!matchedKey) {
+        const notInUseKeys = await redisClient.sMembers("solana:keys:inUse:false");
+        for (const key of notInUseKeys) {
+            const data = await redisClient.hGetAll(key);
+            if (data && data.publicKey === publicKey) {
+                return;
+            }
+        }
+        return;
+    }
+    await redisClient.sRem("solana:keys:inUse:true", matchedKey);
+    await redisClient.sAdd("solana:keys:inUse:false", matchedKey);
+    await redisClient.hSet(matchedKey, "inUse", "false");
 }
 
 export async function addNewPayment(payment: Payment) {

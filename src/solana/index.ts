@@ -76,7 +76,6 @@ export async function checkLatestPayment(minutesAgo: number, walletAddress: Publ
     const timeLimit = now - minutesAgo * 60;
 
     if (tx.blockTime < timeLimit) {
-        console.log(`Transaction is older than ${minutesAgo} minutes.`);
         return null;
     }
 
@@ -90,9 +89,6 @@ export async function checkLatestPayment(minutesAgo: number, walletAddress: Publ
 
 
     if (diff > 0) {
-        console.log(`✅ Incoming payment of ${diff / 1e9} SOL`);
-        console.log(`🕒 Time: ${new Date(tx.blockTime * 1000).toISOString()}`);
-        console.log(`🔗 Tx Signature: ${latestSignature.signature}`);
         return {
             amount: diff,
             time: new Date(tx.blockTime * 1000).toISOString(),

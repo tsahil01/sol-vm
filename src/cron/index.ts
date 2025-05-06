@@ -1,6 +1,6 @@
-import { PublicKey } from "@solana/web3.js";
+import { LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js";
 import { bot, db } from "..";
-import { allPendingPayments, removePayment } from "../redis";
+import { allPendingPayments, makeSolanaKeyUnused, removePayment } from "../redis";
 import { checkLatestPayment } from "../solana";
 import { afterPayment } from "../vm/processor";
 
@@ -15,8 +15,9 @@ export async function checkPayments() {
         if (payment.expiryAt < now) {
             console.log(`Payment ${payment.id} has expired.`);
             await removePayment(payment.id);
-            bot.sendMessage(payment.chatId, `*Your payment for ${payment.amount} has expired.*\nPlease make a new payment.`);
-            db.transaction.update({
+            await makeSolanaKeyUnused(payment.paidToAddress);
+            bot.sendMessage(payment.chatId, `*Your payment for ${payment.amount / BigInt(LAMPORTS_PER_SOL)}SOL has expired.*\nPlease make a new payment.`);
+            await db.transaction.update({
                 where: {
                     id: Number(payment.id),
                 },
@@ -34,6 +35,7 @@ export async function checkPayments() {
             }
             if (data && data.signature && data.amount > 0) {
                 await removePayment(payment.id);
+                await makeSolanaKeyUnused(payment.paidToAddress);
                 bot.sendMessage(payment.chatId, `✅ *Your payment of ${data.amount} has been received!*`);
                 try {
                     const transaction = await db.transaction.findUnique({
@@ -62,7 +64,7 @@ export async function checkPayments() {
                             },
                         });
 
-                        bot.sendMessage(payment.chatId, `🎉 *Your payment of ${data.amount} has been confirmed!*\n\n*Signature:* \`${data.signature}\`\n*Paid from:* \`${data.paidFromAddress}\``);
+                        bot.sendMessage(payment.chatId, `🎉 *Your payment of ${data.amount / LAMPORTS_PER_SOL}SOL has been confirmed!*\n\n*Signature:* \`${data.signature}\`\n*Paid from:* \`${data.paidFromAddress}\``);
                         bot.sendMessage(payment.chatId, `🚀 *Starting your Virtual Machine...*`);
 
                         const vm = await afterPayment({ chatId: payment.chatId, tnxId: Number(payment.id) });
@@ -73,7 +75,7 @@ export async function checkPayments() {
 
                     } else {
                         console.log(`Transaction not found or amount mismatch for payment ${payment.id}.`);
-                        bot.sendMessage(payment.chatId, `❌ *The payment of ${data.amount} is not enough to start your Virtual Machine.*\nPlease make a new payment.`);
+                        bot.sendMessage(payment.chatId, `❌ *The payment of ${data.amount / LAMPORTS_PER_SOL}SOL is not enough to start your Virtual Machine.*\nPlease make a new payment.`);
                         await db.transaction.update({
                             where: {
                                 id: Number(payment.id),
