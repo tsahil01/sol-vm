@@ -52,3 +52,46 @@ export function isValidSolanaAddress(address: string): boolean {
         return false;
     }
 }
+
+export async function checkLatestPayment(minutesAgo: number, walletAddress: PublicKey) {
+
+    const [latestSignature] = await connection.getSignaturesForAddress(walletAddress, { limit: 1 });
+
+    if (!latestSignature) {
+        return null;
+    }
+
+    const tx = await connection.getTransaction(latestSignature.signature, {
+        commitment: "confirmed"
+    });
+
+    if (!tx || !tx.meta || !tx.blockTime) {
+        return null;
+    }
+
+    const now = Math.floor(Date.now() / 1000);
+    const timeLimit = now - minutesAgo * 60;
+
+    if (tx.blockTime < timeLimit) {
+        console.log(`Transaction is older than ${minutesAgo} minutes.`);
+        return;
+    }
+
+    const pre = tx.meta.preBalances[0];
+    const post = tx.meta.postBalances[0];
+    const diff = post - pre;
+
+    if (diff > 0) {
+        console.log(`✅ Incoming payment of ${diff / 1e9} SOL`);
+        console.log(`🕒 Time: ${new Date(tx.blockTime * 1000).toISOString()}`);
+        console.log(`🔗 Tx Signature: ${latestSignature.signature}`);
+        return {
+            amount: diff,
+            time: new Date(tx.blockTime * 1000).toISOString(),
+            signature: latestSignature.signature,
+            paidFromAddress: tx.transaction.message.accountKeys[0].toBase58(),
+        }
+    } else {
+        return null;
+    }
+};

@@ -41,7 +41,7 @@ export interface SolRedisData {
 
 export interface Payment {
     id: string;
-    amount: number;
+    amount: bigint;
     createdAt: Date;
     expiryAt: Date;
     paidToAddress: string;

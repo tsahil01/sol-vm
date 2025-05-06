@@ -2,7 +2,7 @@ import { LAMPORTS_PER_SOL } from "@solana/web3.js";
 import { db } from "..";
 import { VM } from "../types";
 import { VMType } from "../../generated/prisma";
-import { getUnusedSolanaKey } from "../redis";
+import { addNewPayment, getUnusedSolanaKey } from "../redis";
 
 export async function createTnx(chatId: number, vm: VM, hr: number) {
     const user = await db.user.findUnique({
@@ -46,6 +46,16 @@ export async function createTnx(chatId: number, vm: VM, hr: number) {
             vmId: vmData.id,
         },
     });
+
+    await addNewPayment({
+        id: (transaction.id).toString(),
+        userId: (user.id).toString(),
+        chatId: (chatId).toString(),
+        amount: transaction.lamports,
+        createdAt: new Date(),
+        expiryAt: new Date(Date.now() + 10 * 60 * 1000), // 10 minutes
+        paidToAddress: payTo.publicKey,
+    })
 
     return { transaction, user, vmData };
 }

@@ -80,7 +80,7 @@ async function selectMachineMsg(chatId: number, bot: TelegramBot, vmName: string
     const solAmount = Number(transaction.lamports) / LAMPORTS_PER_SOL;
 
     await bot.sendMessage(chatId,
-        `*🖥️ VM Configuration Details*
+        (`*🖥️ VM Configuration Details*
                 
                 ━━━━━━━━━━━━━━━━━━
                 🔹 *Type:* \`${vmData.type.toUpperCase()}\`
@@ -91,11 +91,11 @@ async function selectMachineMsg(chatId: number, bot: TelegramBot, vmName: string
                 ⏳ *Rental Period:* \`2 hours\`
                 💵 *Total Cost:* \`${(vmData.price * 2).toFixed(2)}SOL\`
                 ━━━━━━━━━━━━━━━━━━
-                `, { parse_mode: 'Markdown' });
+                `), { parse_mode: 'Markdown' });
 
 
     await bot.sendMessage(chatId,
-        `*✅ Transaction Created!*
+        (`*✅ Transaction Created!*
                     
 ━━━━━━━━━━━━━━━━━━
 💰 *Amount to Send:*  
@@ -110,7 +110,7 @@ async function selectMachineMsg(chatId: number, bot: TelegramBot, vmName: string
 ⏳ _After payment confirmation on the blockchain, your virtual machine will be activated automatically._
                     
 ⏰ *You have 10 minutes to complete this transaction. After that, it will be canceled and you’ll need to start over.*
-                    `, { parse_mode: 'Markdown' });
+        `), { parse_mode: 'Markdown' });
 
     await bot.sendMessage(chatId, `Send the amount to the address below:\n\`${transaction.paidToAddress}\`\n\n*Amount to send:* \`${solAmount.toFixed(9)} SOL\``,
         { parse_mode: 'Markdown' });

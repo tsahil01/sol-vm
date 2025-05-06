@@ -92,7 +92,7 @@ export async function addNewPayment(payment: Payment) {
     await redisClient.hSet(key, {
         userId: payment.userId,
         chatId: payment.chatId,
-        amount: payment.amount,
+        amount: payment.amount.toString(),
         createdAt: payment.createdAt.toISOString(),
         expiryAt: payment.expiryAt.toISOString(),
         paidToAddress: payment.paidToAddress,
@@ -100,7 +100,7 @@ export async function addNewPayment(payment: Payment) {
     await redisClient.sAdd("payments", key);
 }
 
-export async function allPayments() {
+export async function allPendingPayments() {
     const keys = await redisClient.sMembers("payments");
     const payments: Payment[] = [];
 
@@ -111,7 +111,7 @@ export async function allPayments() {
                 id: key.split(":")[1],
                 userId: String(data.userId),
                 chatId: String(data.chatId),
-                amount: Number(data.amount),
+                amount: BigInt(String(data.amount)),
                 createdAt: new Date(String(data.createdAt)),
                 expiryAt: new Date(String(data.expiryAt)),
                 paidToAddress: String(data.paidToAddress),
