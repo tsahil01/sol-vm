@@ -1,12 +1,13 @@
 import { redisClient } from "..";
 import { SolRedisData } from "../types";
 
-export async function setSolanaKeys({ id, publicKey, encryptedKey, inUse }: SolRedisData) {
+export async function setSolanaKeys({ id, publicKey, encryptedKey, derivationPath, inUse }: SolRedisData) {
     const key = `solana:keys:${id}`;
 
     await redisClient.hSet(key, {
         publicKey,
         encryptedKey,
+        derivationPath,
         inUse: inUse.toString(),
     });
 

@@ -6,6 +6,7 @@ import cors from 'cors';
 import { PrismaClient } from '../generated/prisma';
 import webhookRouter from './webhook';
 import { createClient } from "redis";
+import { setSolanaKeys } from './redis';
 config();
 
 const token = process.env.TELEGRAM_BOT_TOKEN!;
@@ -37,6 +38,17 @@ redisClient.on('error', (err) => console.log('Redis Client Error', err));
 (async () => {
     await redisClient.connect();
     console.log('Connected to Redis');
+    const solanaKeys = await db.solanaKeys.findMany();
+    for (const key of solanaKeys) {
+        console.log(`Setting Solana key ${key.id} to Redis`);
+        await setSolanaKeys({
+            id: key.id,
+            publicKey: key.publicKey,
+            encryptedKey: key.encryptPrivateKey,
+            derivationPath: key.path,
+            inUse: false
+        })
+    }
 })();
 
 app.get('/', (req, res) => {

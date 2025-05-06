@@ -32,8 +32,9 @@ export interface WebhookEvent {
 }
 
 export interface SolRedisData {
-    id: string;
+    id: string | number;
     publicKey: string;
     encryptedKey: string;
+    derivationPath: string;
     inUse: boolean;
 }
