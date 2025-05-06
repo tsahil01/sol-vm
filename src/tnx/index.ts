@@ -42,7 +42,6 @@ export async function createTnx(chatId: number, vm: VM, hr: number) {
             paidToAddress: payTo.publicKey,
             status: 'pending',
             type: 'payment',
-            webhookStatus: 'pending',
             vmId: vmData.id,
         },
     });

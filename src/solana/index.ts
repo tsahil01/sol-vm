@@ -56,6 +56,7 @@ export function isValidSolanaAddress(address: string): boolean {
 export async function checkLatestPayment(minutesAgo: number, walletAddress: PublicKey) {
 
     const [latestSignature] = await connection.getSignaturesForAddress(walletAddress, { limit: 1 });
+    console.log(`Latest signature: ${latestSignature?.signature}`);
 
     if (!latestSignature) {
         return null;
@@ -64,6 +65,8 @@ export async function checkLatestPayment(minutesAgo: number, walletAddress: Publ
     const tx = await connection.getTransaction(latestSignature.signature, {
         commitment: "confirmed"
     });
+
+    console.log(`Transaction: ${tx}`);
 
     if (!tx || !tx.meta || !tx.blockTime) {
         return null;
@@ -74,12 +77,17 @@ export async function checkLatestPayment(minutesAgo: number, walletAddress: Publ
 
     if (tx.blockTime < timeLimit) {
         console.log(`Transaction is older than ${minutesAgo} minutes.`);
-        return;
+        return null;
     }
 
     const pre = tx.meta.preBalances[0];
     const post = tx.meta.postBalances[0];
-    const diff = post - pre;
+    const fees = tx.meta.fee;
+    const diff = pre - post - fees;
+    console.log(`Pre-balance: ${pre}`);
+    console.log(`Post-balance: ${post}`);
+    console.log(`Difference: ${diff}`);
+
 
     if (diff > 0) {
         console.log(`✅ Incoming payment of ${diff / 1e9} SOL`);

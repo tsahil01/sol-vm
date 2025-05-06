@@ -6,8 +6,8 @@ import { afterPayment } from "../vm/processor";
 
 export async function checkPayments() {
     const payments = await allPendingPayments();
+    console.log(`Found ${payments.length} pending payments.`);
     if (payments.length === 0) {
-        console.log("No pending payments found.");
         return;
     }
     const now = new Date();
@@ -15,7 +15,7 @@ export async function checkPayments() {
         if (payment.expiryAt < now) {
             console.log(`Payment ${payment.id} has expired.`);
             await removePayment(payment.id);
-            bot.sendMessage(payment.chatId, `Your payment for ${payment.amount} has expired. Please make a new payment.`);
+            bot.sendMessage(payment.chatId, `*Your payment for ${payment.amount} has expired.*\nPlease make a new payment.`);
             db.transaction.update({
                 where: {
                     id: Number(payment.id),
@@ -33,9 +33,8 @@ export async function checkPayments() {
                 continue;
             }
             if (data && data.signature && data.amount > 0) {
-                console.log(`Payment ${payment.id} has been received.`);
                 await removePayment(payment.id);
-                bot.sendMessage(payment.chatId, `Your payment of ${data.amount} has been received!`);
+                bot.sendMessage(payment.chatId, `✅ *Your payment of ${data.amount} has been received!*`);
                 try {
                     const transaction = await db.transaction.findUnique({
                         where: {
@@ -45,7 +44,10 @@ export async function checkPayments() {
                             vm: true,
                         },
                     });
-                    if (transaction && transaction.lamports >= data.amount) {
+                    if (!transaction) {
+                        return;
+                    }
+                    if (transaction && transaction.lamports <= data.amount) {
                         await db.transaction.update({
                             where: {
                                 id: transaction.id,
@@ -60,16 +62,18 @@ export async function checkPayments() {
                             },
                         });
 
-                        bot.sendMessage(payment.chatId, `Your payment of ${data.amount} has been confirmed!\nSignature: ${data.signature}\nPaid from: ${data.paidFromAddress}`);
+                        bot.sendMessage(payment.chatId, `🎉 *Your payment of ${data.amount} has been confirmed!*\n\n*Signature:* \`${data.signature}\`\n*Paid from:* \`${data.paidFromAddress}\``);
+                        bot.sendMessage(payment.chatId, `🚀 *Starting your Virtual Machine...*`);
 
                         const vm = await afterPayment({ chatId: payment.chatId, tnxId: Number(payment.id) });
                         if (vm != true) {
-                            bot.sendMessage(payment.chatId, `Your payment has been confirmed, but there was an error processing the transaction.`);
+                            bot.sendMessage(payment.chatId, `⚠️ *Your payment has been confirmed, but there was an error processing the transaction.*`);
                         }
 
 
                     } else {
                         console.log(`Transaction not found or amount mismatch for payment ${payment.id}.`);
+                        bot.sendMessage(payment.chatId, `❌ *The payment of ${data.amount} is not enough to start your Virtual Machine.*\nPlease make a new payment.`);
                         await db.transaction.update({
                             where: {
                                 id: Number(payment.id),

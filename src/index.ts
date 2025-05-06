@@ -4,9 +4,10 @@ import TelegramBot from 'node-telegram-bot-api';
 import express from 'express';
 import cors from 'cors';
 import { PrismaClient } from '../generated/prisma';
-import webhookRouter from './webhook';
 import { createClient } from "redis";
 import { setSolanaKeys } from './redis';
+import cron from 'node-cron';
+import { checkPayments } from './cron';
 config();
 
 const token = process.env.TELEGRAM_BOT_TOKEN!;
@@ -54,7 +55,11 @@ app.get('/', (req, res) => {
     res.send('Hello World!');
 });
 
-app.use('/webhook', webhookRouter)
+cron.schedule('*/30 * * * * *', () => {
+    console.log('Running cron job every 30 seconds');
+    checkPayments();
+});
+
 
 app.listen(port, () => {
     console.log(`Server is running on port ${port}`);
