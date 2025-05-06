@@ -1,7 +1,7 @@
 import { db, redisClient } from "..";
 import { generateNewAccount } from "../solana";
 import { encryptKey } from "../solana/encrypt-decrypt";
-import { SolRedisData } from "../types";
+import { Payment, SolRedisData } from "../types";
 
 export async function setSolanaKeys({ id, publicKey, encryptedKey, derivationPath, inUse }: SolRedisData) {
     const key = `solana:keys:${id}`;
@@ -21,8 +21,15 @@ export async function setSolanaKeys({ id, publicKey, encryptedKey, derivationPat
     }
 
     // we can also push it our prisma db
-    await db.solanaKeys.create({
-        data: {
+    await db.solanaKeys.upsert({
+        where: { id: Number(id) },
+        update: {
+            id: Number(id),
+            publicKey,
+            encryptPrivateKey: encryptedKey,
+            path: derivationPath,
+        },
+        create: {
             id: Number(id),
             publicKey,
             encryptPrivateKey: encryptedKey,
@@ -78,4 +85,44 @@ export async function makeSolanaKeyUnused(id: string) {
         await redisClient.sAdd("solana:keys:inUse:false", key);
         await redisClient.hSet(key, "inUse", "false");
     }
+}
+
+export async function addNewPayment(payment: Payment) {
+    const key = `payment:${payment.id}`;
+    await redisClient.hSet(key, {
+        userId: payment.userId,
+        chatId: payment.chatId,
+        amount: payment.amount,
+        createdAt: payment.createdAt.toISOString(),
+        expiryAt: payment.expiryAt.toISOString(),
+        paidToAddress: payment.paidToAddress,
+    });
+    await redisClient.sAdd("payments", key);
+}
+
+export async function allPayments() {
+    const keys = await redisClient.sMembers("payments");
+    const payments: Payment[] = [];
+
+    for (const key of keys) {
+        const data = await redisClient.hGetAll(key);
+        if (data) {
+            payments.push({
+                id: key.split(":")[1],
+                userId: String(data.userId),
+                chatId: String(data.chatId),
+                amount: Number(data.amount),
+                createdAt: new Date(String(data.createdAt)),
+                expiryAt: new Date(String(data.expiryAt)),
+                paidToAddress: String(data.paidToAddress),
+            });
+        }
+    }
+    return payments;
+}
+
+export async function removePayment(id: string) {
+    const key = `payment:${id}`;
+    await redisClient.del(key);
+    await redisClient.sRem("payments", key);
 }

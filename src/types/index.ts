@@ -38,3 +38,13 @@ export interface SolRedisData {
     derivationPath: string;
     inUse: boolean;
 }
+
+export interface Payment {
+    id: string;
+    amount: number;
+    createdAt: Date;
+    expiryAt: Date;
+    paidToAddress: string;
+    userId: string;
+    chatId: string;
+}

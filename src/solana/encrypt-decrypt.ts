@@ -1,6 +1,9 @@
 import { randomBytes, createCipheriv, createDecipheriv } from "crypto";
+import { config } from "dotenv";
+config();
 
-const ENCRYPTION_KEY = Buffer.from(process.env.ENCRYPTION_SECRET!, "hex");
+const encryptionSecret = process.env.ENCRYPTION_SECRET!
+const ENCRYPTION_KEY = Buffer.from(encryptionSecret, "hex");
 
 export function encryptKey(secretKey: string): string {
     const iv = randomBytes(12);
