@@ -27,6 +27,12 @@ export async function checkPayments() {
                 data: {
                     status: 'expired',
                     updatedAt: new Date(),
+                    vm: {
+                        update: {
+                            status: 'terminated',
+                            updatedAt: new Date(),
+                        },
+                    }
                 },
             }).catch((err) => {
                 console.error(`Failed to update transaction status for payment ${payment.id}:`, err);

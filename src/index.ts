@@ -47,13 +47,13 @@ redisClient.on('error', (err) => console.log('Redis Client Error', err));
     }
 })();
 
-cron.schedule('*/30 * * * * *', () => {
-    console.log('Running cron job every 30 seconds');
+cron.schedule('*/15 * * * * *', () => {
+    console.log('Running cron job every 15 seconds');
     checkPayments();
 });
 
-cron.schedule('*/15 * * * *', () => {
-    console.log('Running cron job every 15 minutes');
+cron.schedule('*/1 * * * *', () => {
+    console.log('Running cron job every 1 minutes');
     stopVms();
 });
 
