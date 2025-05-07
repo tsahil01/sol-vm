@@ -127,15 +127,22 @@ export async function stopVms() {
                         parse_mode: 'Markdown',
                     });
                 }
-                await db.vM.update({
+                const dbVm = await db.vM.findFirst({
                     where: {
-                        id: Number(vm.id),
-                    },
-                    data: {
-                        status: 'terminated',
-                        updatedAt: new Date(),
+                        instanceId: vm.instanceId
                     }
                 });
+                if (dbVm) {
+                    await db.vM.update({
+                        where: {
+                            id: dbVm.id
+                        },
+                        data: {
+                            status: 'terminated',
+                            updatedAt: new Date(),
+                        }
+                    });
+                }
                 bot.sendMessage(vm.chatId, `*Your Virtual Machine with instance ID ${vm.instanceId} has been deleted.*\nThankyou for using SolVM!!`, {
                     parse_mode: 'Markdown',
                 });
