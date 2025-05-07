@@ -1,4 +1,5 @@
 import { generateKeyPairSync } from 'crypto';
+import * as sshpk from 'sshpk';
 
 export function generateSSHKeyPair() {
     const { publicKey, privateKey } = generateKeyPairSync('rsa', {
@@ -13,11 +14,8 @@ export function generateSSHKeyPair() {
         }
     });
 
-    const formattedPublicKey = publicKey.replace('-----BEGIN PUBLIC KEY-----\n', '')
-        .replace('\n-----END PUBLIC KEY-----\n', '')
-        .trim();
-
-    const sshPublicKey = `ssh-rsa ${formattedPublicKey} user`;
+    const pemKey = sshpk.parseKey(publicKey, 'pem');
+    const sshPublicKey = pemKey.toString('ssh');
 
     return {
         privateKey,
