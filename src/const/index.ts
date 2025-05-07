@@ -80,7 +80,7 @@ export function vmStartInstructions(vmDetails: { ip: string; instanceName: strin
     *For Linux/Mac:*
     1. Save the private key file
     2. Run: \`chmod 600 private_key_${userId}.pem\`
-    3. Connect: \`ssh -i private_key_${userId}.pem user@${vmDetails.ip}\`
+    3. Connect: \`ssh -i private_key_${userId}.pem  -o StrictHostKeyChecking=no user@${vmDetails.ip}\`
     
     *For Windows:*
     1. Use PuTTY Key Generator to convert the key
