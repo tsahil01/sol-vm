@@ -4,6 +4,7 @@ A Telegram bot that lets users rent Google Cloud Platform (GCP) virtual machines
 <br/>
 [**Try it now!**](https://solvmbot.vercel.app/)  
 <br/>
+This Project currenly works on Devnet. Make sure to change your Wallet RPC before payment.
 
 ## Project Overview
 
