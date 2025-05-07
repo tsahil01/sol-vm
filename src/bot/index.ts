@@ -146,17 +146,12 @@ async function switchConditions(cmd: string, chatId: number, bot: TelegramBot, m
                 }
                 let message = `*Your VMs:*\n\n`;
                 user.vms.forEach((vm) => {
-                    const rentedSince = vm.rentedAt ? new Date(vm.rentedAt).toLocaleString() : 'Unknown';
-                    const expiresAt = vm.expiresAt ? new Date(vm.expiresAt).toLocaleString() : 'Not set';
                     message += `*${vm.name ? vm.name.toUpperCase() : 'UNKNOWN'}*\n`;
-                    message += `• Type: ${vm.type}\n`;
                     message += `• CPU: ${vm.cpu} cores\n`;
                     message += `• RAM: ${vm.ram} GB\n`;
                     message += `• IP: ${vm.ipAddress || 'Not assigned'}\n`;
-                    message += `• Rented since: ${rentedSince}\n`;
-                    message += `• Expires at: ${expiresAt}\n`;
-                    message += `• Hourly cost: ${vm.price.toFixed(2)}SOL/hr\n`;
-                    message += `• Status: ${vm.status}\n\n`;
+                    message += `• Rented since: ${vm.rentedAt ? new Date(vm.rentedAt).toLocaleString() : 'Unknown'}\n`;
+                    message += `• Expires at: ${vm.expiresAt ? new Date(vm.expiresAt).toLocaleString() : 'Not set'}\n`;
                 });
                 message += `*Total VMs rented: ${user.vms.length}*\n`;
                 message += `*Total spent: ${user.vms.reduce((sum, vm) => sum + vm.price, 0).toFixed(2)}SOL*\n`;
@@ -192,29 +187,20 @@ async function switchConditions(cmd: string, chatId: number, bot: TelegramBot, m
                     break;
                 }
 
-                const totalSpent = user.transactions.reduce((sum, tnx) => {
-                    return sum + Number(tnx.lamports) / Number(BigInt(LAMPORTS_PER_SOL));
-                }, 0);
-                const activeVMs = user.vms.filter(vm => vm.status === 'active');
-
                 let usageMessage = `*Your Usage Statistics*\n\n`;
-                usageMessage += `Active VMs: ${activeVMs.length}\n`;
+                usageMessage += `Active VMs: ${user.vms.filter(vm => vm.status === 'active').length}\n`;
                 usageMessage += `Total VMs (all time): ${user.vms.length}\n`;
-                usageMessage += `Total spent: ${totalSpent.toFixed(2)}SOL\n\n`;
+                usageMessage += `Total spent: ${user.transactions.reduce((sum, tnx) => {
+                    return sum + Number(tnx.lamports) / Number(BigInt(LAMPORTS_PER_SOL));
+                }, 0).toFixed(2)}SOL\n\n`;
 
-                if (activeVMs.length > 0) {
-                    usageMessage += `*Currently Active VMs:*\n`;
-                    activeVMs.forEach(vm => {
-                        const rentedSince = vm.rentedAt ? new Date(vm.rentedAt).toLocaleString() : 'Unknown';
-                        const expiresAt = vm.expiresAt ? new Date(vm.expiresAt).toLocaleString() : 'Not set';
-
-                        usageMessage += `\n*${vm.name ? vm.name.toUpperCase() : 'UNKNOWN'}*\n`;
+                if (user.vms.length > 0) {
+                    user.vms.forEach(vm => {
+                        usageMessage += `*${vm.name ? vm.name.toUpperCase() : 'UNKNOWN'}*\n`;
                         usageMessage += `• CPU: ${vm.cpu} cores\n`;
                         usageMessage += `• RAM: ${vm.ram} GB\n`;
                         usageMessage += `• IP: ${vm.ipAddress || 'Not assigned'}\n`;
-                        usageMessage += `• Rented since: ${rentedSince}\n`;
-                        usageMessage += `• Expires at: ${expiresAt}\n`;
-                        usageMessage += `• Hourly cost: $${vm.price.toFixed(2)}/hr\n`;
+                        usageMessage += `• Rented since: ${vm.rentedAt ? new Date(vm.rentedAt).toLocaleString() : 'Unknown'}\n`;
                     });
                 } else {
                     usageMessage += `You don't have any active VMs right now.\n`;

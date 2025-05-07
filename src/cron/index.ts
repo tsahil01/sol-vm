@@ -39,7 +39,7 @@ export async function checkPayments() {
             if (data && data.signature && data.amount > 0) {
                 await removePayment(payment.id);
                 await makeSolanaKeyUnused(payment.paidToAddress);
-                bot.sendMessage(payment.chatId, `✅ *Your payment of ${data.amount} has been received!*`, {
+                bot.sendMessage(payment.chatId, `✅ *Your payment of ${data.amount / LAMPORTS_PER_SOL}SOL has been received!*`, {
                     parse_mode: 'Markdown',
                 });
                 try {
@@ -86,6 +86,7 @@ export async function checkPayments() {
 
                     } else {
                         console.log(`Transaction not found or amount mismatch for payment ${payment.id}.`);
+
                         bot.sendMessage(payment.chatId, `❌ *The payment of ${data.amount / LAMPORTS_PER_SOL}SOL is not enough to start your Virtual Machine.*\nPlease make a new payment.`, {
                             parse_mode: 'Markdown',
                         });

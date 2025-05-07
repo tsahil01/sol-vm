@@ -2,6 +2,7 @@ import { config } from 'dotenv';
 import { botInit, handleCallbackQuery, handleTextMessage } from './bot';
 import TelegramBot from 'node-telegram-bot-api';
 import { PrismaClient } from '../generated/prisma';
+import { withAccelerate } from '@prisma/extension-accelerate';
 import { createClient } from "redis";
 import { setSolanaKeys } from './redis';
 import cron from 'node-cron';
@@ -10,7 +11,7 @@ config();
 
 const token = process.env.TELEGRAM_BOT_TOKEN!;
 
-export const db = new PrismaClient();
+export const db = new PrismaClient().$extends(withAccelerate());
 
 export const bot = new TelegramBot(token, { polling: true });
 botInit(bot);
