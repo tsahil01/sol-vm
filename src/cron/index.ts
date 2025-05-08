@@ -17,7 +17,7 @@ export async function checkPayments() {
             console.log(`Payment ${payment.id} has expired.`);
             await removePayment(payment.id);
             await makeSolanaKeyUnused(payment.paidToAddress);
-            bot.sendMessage(payment.chatId, `*Your payment for ${payment.amount}SOL has expired.*\nPlease make a new payment.`, {
+            bot.sendMessage(payment.chatId, `*Your payment for ${(Number(payment.amount) / LAMPORTS_PER_SOL).toFixed(4)} SOL has expired.*\nPlease make a new payment.`, {
                 parse_mode: 'Markdown',
             });
             await db.transaction.update({
