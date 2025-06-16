@@ -7,7 +7,7 @@ A Telegram bot that lets users rent Google Cloud Platform (GCP) virtual machines
 This Project currenly works on Devnet. Make sure to change your Wallet RPC before payment.
 
 ## Demo Video
-<iframe width="560" height="315" src="https://www.youtube.com/embed/rxWnLnO8p5w" frameborder="0" allowfullscreen></iframe>
+[![Demo Video](https://img.youtube.com/vi/rxWnLnO8p5w/0.jpg)](https://youtu.be/rxWnLnO8p5w)
 
 ## Project Overview
 
