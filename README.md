@@ -6,6 +6,9 @@ A Telegram bot that lets users rent Google Cloud Platform (GCP) virtual machines
 <br/>
 This Project currenly works on Devnet. Make sure to change your Wallet RPC before payment.
 
+## Demo Video
+<iframe width="560" height="315" src="https://www.youtube.com/embed/rxWnLnO8p5w" frameborder="0" allowfullscreen></iframe>
+
 ## Project Overview
 
 SolVM is a complete solution for renting cloud-based virtual machines through a Telegram interface. Users can:
